@@ -1,0 +1,319 @@
+//
+// Model.cpp for test in /u/all/el-out_y/public/bomberman/chen_b
+// 
+// Made by laurent chen
+// Login   <chen_b@epitech.net>
+// 
+// Started on  Thu May 26 19:32:11 2011 laurent chen
+// Last update Sun Jun  5 22:49:22 2011 youssef el-outmani
+//
+
+#include <iostream>
+#include "stdio.h"
+
+#include "Model.hpp"
+#include "Personnage.hpp"
+#include "Color.hpp"
+#include "AnimStates.hpp"
+#include "Bomb.hpp"
+
+namespace	Perso
+{
+  t_dir		mvtpl1[5] =
+    {
+      {UP, gdl::Keys::Up, 0},
+      {RIGHT, gdl::Keys::Right, 270},
+      {DOWN, gdl::Keys::Down, 180},
+      {LEFT, gdl::Keys::Left, 90},
+      {BOMB, gdl::Keys::RControl, -1}
+    };
+
+  t_dir		mvtpl2[5] =
+    {
+      {UP, gdl::Keys::W, 0},
+      {RIGHT, gdl::Keys::D, 270},
+      {DOWN, gdl::Keys::S, 180},
+      {LEFT, gdl::Keys::A, 90},
+      {BOMB, gdl::Keys::LControl, -1}
+    };
+
+  t_mvt		mvt[4] =
+    {
+      {UP, 0, 1, DOWN},
+      {RIGHT, -1, 0, LEFT},
+      {DOWN, 0, -1, UP},
+      {LEFT, 1, 0, RIGHT}
+    };
+
+  Personnage::Personnage(gdl::Color &color, float x, float z, int id, Camera const &camera, std::list<AObject*> *objs, gdl::Image const &iFire) : AObject(PLAYER)
+  {
+    this->iFire_ = iFire;
+    this->objects_ = objs;
+    this->camera_ = camera;
+    this->id_ = id;
+    this->position_.x = x;
+    this->position_.y = 0.0f;
+    this->position_.z = z;
+    this->rotation_.x = 0.0f;
+    this->rotation_.y = 180.0f;
+    this->rotation_.z = 0.0f;
+    this->power_ = 2;
+    this->speed_ = 0;
+    this->nbomb_ = 1;
+    this->speedMax_ = 5;
+    this->color_ = color;
+    this->direction_ = DOWN;
+    this->isRunning_ = false;
+  }
+
+  Personnage::~Personnage()
+  {
+  }
+
+  int	Personnage::getSpeed_(void) const
+  {
+    return (this->speed_);
+  }
+
+  int	Personnage::getPower_(void) const
+  {
+    return (this->power_);
+  }
+
+  int	Personnage::getNbomb_(void) const
+  {
+    return (this->nbomb_);
+  }
+
+  int	Personnage::getNbombMax_(void) const
+  {
+    return (this->nbombMax_);
+  }
+
+  int 	Personnage::getSpeedMax_(void) const
+  {
+    return (this->speedMax_);
+  }
+
+  e_direction	Personnage::getDirection_(void) const
+  {
+    return (this->direction_);
+  }
+
+  bool	Personnage::getIsRunning_(void) const
+  {
+    return (this->isRunning_);
+  }
+
+  gdl::Color 	Personnage::getColor_() const
+  {
+    return (this->color_);
+  }
+
+  void	Personnage::setSpeed_(int speed)
+  {
+    this->speed_ = speed;
+  }
+
+  void	Personnage::setPower_(int pow)
+  {
+    this->power_ = pow;
+  }
+
+  void	Personnage::setNbomb_(int nbb)
+  {
+    this->nbomb_ = nbb;
+  }
+
+  void  Personnage::setNbombMax_(int nbbm)
+  {
+    this->nbombMax_ = nbbm;
+  }
+
+  void	Personnage::setDirection_(e_direction dir)
+  {
+    this->direction_ = dir;
+  }
+
+  void	Personnage::setIsRunning_(bool isr)
+  {
+    this->isRunning_ = isr;
+  }
+
+  void	Personnage::setColor_(gdl::Color& color)
+  {
+    this->color_ = color;
+  }
+
+  int	Personnage::getId_() const
+  {
+    return (this->id_);
+  }
+
+  void	Personnage::initialize(void)
+  {
+    this->isPush_ = false;    
+    this->model_ = gdl::Model::load("assets/models/marvinLowLowPo.fbx");
+    this->model_.set_default_model_color(this->color_);
+    this->model_.cut_animation(this->model_, "Take 001", 36, 55, "Courrir");
+    this->model_.cut_animation(this->model_, "Take 001", 0, 0, "Start");
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glTranslatef(this->position_.x + this->camera_.getPos().x,
+		 this->position_.y + this->camera_.getPos().y,
+		 this->position_.z + this->camera_.getPos().z);
+    glPopMatrix();
+  }
+
+  void		Personnage::move(e_direction dir)
+  {
+    this->position_.x += (this->speed_ * 30 + 70) * mvt[dir].coefX;
+    this->position_.z += (this->speed_ * 30 + 70) * mvt[dir].coefZ;
+    if (this->isRunning_ == true)
+      this->model_.play("Courrir");
+    else
+      this->isRunning_ = true;
+  }
+
+  void		Personnage::rotate(e_direction dir)
+  {
+    this->rotation_.y = (getKeys())[dir].angle;
+    this->direction_ = dir;
+  }
+
+  t_dir*	Personnage::getKeys()
+  {
+    if (this->id_ == 1)
+      return (mvtpl1);
+    else
+      return (mvtpl2);
+  }
+
+
+  void		Personnage::add_bonus(Bonus *bonus)
+  {
+    if (bonus->getBType_() == BONUS_BOMB)
+      this->nbomb_++;
+    else if (bonus->getBType_() == BONUS_SPEED && this->speed_ != this->speedMax_)
+      this->speed_++;
+    else
+      this->power_++;
+  }
+
+  void		Personnage::check_move(gdl::Input & input)
+  {
+    int		i;
+
+    for (i = 0; i < 4; i++)
+      {
+	if (input.isKeyDown((getKeys())[i].key) == true)
+	  {
+	    std::list<AObject *>::iterator it = this->objects_->begin();
+	    for (; it != this->objects_->end(); it++)
+	      {
+		if (((*it)->getType() == UBWALL || (*it)->getType() == BWALL)
+		    && this->checkCollision((*it)->getPos().x, (*it)->getPos().z) == true)
+		  {
+		    this->isRunning_ = true;
+		    move(mvt[this->direction_].rev);
+		    break;
+		  }
+		else if ((*it)->getType() == BONUS
+			 && this->checkCollision((*it)->getPos().x, (*it)->getPos().z)  == true)
+		  {
+		    add_bonus(dynamic_cast<Bonus *>(*it));
+		    delete *it;
+		    objects_->erase(it);
+		    break;
+		  }
+	      }
+	    if ((getKeys())[i].dir != this->direction_)
+	      rotate((getKeys())[i].dir);
+	    else if ((getKeys())[i].dir == this->direction_ )
+	      move(mvt[this->direction_].dir);
+	    break;
+	  }
+      }
+    if (i == 4 && this->isRunning_ == true)
+      {
+	this->model_.stop_animation("Courrir");
+	this->model_.play("Start");
+	this->isRunning_ = false;
+      }
+  }
+
+  void		Personnage::check_bomb(gdl::Input & input)
+  {
+    if (input.isKeyDown((getKeys())[4].key) == true && this->nbomb_ != 0
+	&& this->isPush_ == false)
+      {
+	this->objects_->push_front(new Bomb::Bombe(this->position_.x,
+						   this->position_.z, this->id_,
+						   this->power_, this->camera_, this,
+						   this->objects_, this->iFire_));
+	this->isPush_ = true;
+      }
+    else
+      this->isPush_ = false;
+  }
+
+  void		Personnage::changeDir(void)
+  {
+    int		dir = this->direction_;
+
+    if (dir == LEFT)
+      rotate(UP);
+    else
+      rotate((e_direction)(dir + 1));
+  }
+
+  void		Personnage::moveIa(void)
+  {
+    std::list<AObject *>::iterator it = this->objects_->begin();
+    for (; it != this->objects_->end(); it++)
+      {
+	if (((*it)->getType() == UBWALL || (*it)->getType() == BWALL)
+	    && this->checkCollision((*it)->getPos().x, (*it)->getPos().z) == true)
+	  {
+	    this->isRunning_ = true;
+	    move(mvt[this->direction_].rev);
+	    changeDir();
+	    break;
+	  }
+	else if ((*it)->getType() == BONUS
+		 && this->checkCollision((*it)->getPos().x, (*it)->getPos().z)  == true)
+	  {
+	    add_bonus(dynamic_cast<Bonus *>(*it));
+	    delete *it;
+	    objects_->erase(it);
+	    break;
+	  }
+      }
+    move(mvt[this->direction_].dir);
+  }
+
+  void		Personnage::update(gdl::GameClock const & gameClock,
+				   gdl::Input & input)
+  {
+    if (this->id_ == 1 || this->id_ == 2)
+      {
+	this->model_.update(gameClock);
+	this->check_move(input);
+	this->check_bomb(input);
+      }
+    else
+      moveIa();
+  }
+
+  void	Personnage::draw(void)
+  {
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glTranslatef(this->position_.x, this->position_.y, this->position_.z);
+    glRotatef(this->rotation_.y, 0.0f, 1.0f, 0.0f);
+    gdl::Model::Begin();
+    this->model_.draw();
+    gdl::Model::End();
+    glPopMatrix();
+  }
+}
