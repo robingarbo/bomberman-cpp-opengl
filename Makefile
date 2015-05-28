@@ -33,9 +33,9 @@ RM		=	rm -f
 
 CC		=	g++
 
-INCLUDE		+=	-I/home/robin/Documents/lib/gamedevlab/include -I./include/
+INCLUDE		+=	-I./libgdl_gl-2012.4/include -I./include/
 
-LDFLAGS		=	-L/home/robin/Documents/lib/gamedevlab/lib -Wl,--rpath=/home/robin/Documents/lib/gamedevlab/lib -lgdl_gl -lGL -lGLU
+LDFLAGS		=	-L./libgdl_gl-2012.4/lib -Wl,--rpath=./libgdl_gl-2012.4/lib -lgdl_gl -lGL -lGLU
 
 
 
